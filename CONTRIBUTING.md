@@ -248,3 +248,156 @@ export * from './Button';
 | `--color-danger` | `bg-danger`, `text-danger` |
 | `--color-success` | `bg-success`, `text-success` |
 | `--color-warning` | `bg-warning`, `text-warning` |
+
+---
+
+네, 맞습니다. Radix UI는 기능을 제공하는 "원시(Primitive)" 라이브러리이기 때문에, 프로젝트의 디자인 시스템에 맞게 **직접 가공(Wrapping)**해서 사용하는 것이 일반적입니다.
+
+현재 프로젝트의 `Dialog.tsx`를 보면 Radix UI의 컴포넌트들을 가져와서 다음과 같은 방식으로 가공하고 있습니다:
+
+1.  **컴포넌트 분할:** `Root`, `Trigger`, `Content` 등을 각각 명시적인 이름으로 export (`Dialog`, `DialogTrigger`, `DialogContent` 등).
+2.  **스타일 적용:** `cn()` 유틸리티를 사용해 공통 스타일(Tailwind)을 입히고 외부에서 `className`을 넘겨받을 수 있게 처리.
+3.  **ForwardRef 사용:** DOM에 직접 접근할 수 있도록 `React.forwardRef` 적용 (애니메이션이나 포커스 제어에 필요).
+
+보여주신 `Accordion` 예시를 프로젝트 스타일에 맞춰 가공한다면 아래와 같은 구조가 될 것입니다:
+
+```tsx
+// src/components/Accordion/Accordion.tsx 예시
+import React from 'react';
+import * as RadixAccordion from '@radix-ui/react-accordion';
+import { ChevronDownIcon } from '@radix-ui/react-icons';
+import { cn } from '../../utils/cn';
+
+export const Accordion = RadixAccordion.Root;
+
+export const AccordionItem = React.forwardRef<
+  React.ElementRef<typeof RadixAccordion.Item>,
+  React.ComponentPropsWithoutRef<typeof RadixAccordion.Item>
+>(({ className, ...props }, ref) => (
+  <RadixAccordion.Item
+    ref={ref}
+    className={cn('border-b border-gray-200', className)}
+    {...props}
+  />
+));
+
+export const AccordionTrigger = React.forwardRef<
+  React.ElementRef<typeof RadixAccordion.Trigger>,
+  React.ComponentPropsWithoutRef<typeof RadixAccordion.Trigger>
+>(({ className, children, ...props }, ref) => (
+  <RadixAccordion.Header className="flex">
+    <RadixAccordion.Trigger
+      ref={ref}
+      className={cn(
+        'flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180',
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronDownIcon className="h-4 w-4 shrink-0 transition-transform duration-200" />
+    </RadixAccordion.Trigger>
+  </RadixAccordion.Header>
+));
+
+export const AccordionContent = React.forwardRef<
+  React.ElementRef<typeof RadixAccordion.Content>,
+  React.ComponentPropsWithoutRef<typeof RadixAccordion.Content>
+>(({ className, children, ...props }, ref) => (
+  <RadixAccordion.Content
+    ref={ref}
+    className={cn(
+      'overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down',
+      className
+    )}
+    {...props}
+  >
+    <div className="pb-4 pt-0">{children}</div>
+  </RadixAccordion.Content>
+));
+```
+
+### 가공 시 고려할 점:
+- **`classNames` 대신 `cn` 사용:** 프로젝트에 이미 `src/utils/cn.ts`가 있으므로 이를 사용하세요.
+- **TypeScript 정의:** `React.forwardRef`와 함께 `React.ElementRef`, `React.ComponentPropsWithoutRef`를 사용하면 타입 안정성을 높일 수 있습니다.
+- **애니메이션:** `tokens.css`나 Tailwind 설정에 Accordion용 애니메이션(`slideDown` 등)이 정의되어 있는지 확인이 필요할 수 있습니다.
+
+---
+
+Accordion 컴포넌트 작업을 완료했습니다! `Accordion.stories.tsx`를 완성했고, 부드러운 애니메이션을 위한 스타일 설정과 필요한 패키지 설치까지 모두 마쳤습니다.
+
+이제 Storybook을 실행하시면 `Components/Accordion` 메뉴에서 확인하실 수 있습니다.
+
+---
+
+### 🚀 다른 컴포넌트 작업을 위한 가이드
+
+직접 컴포넌트를 추가하실 때 다음의 **4단계 프로세스**를 따라하시면 됩니다.
+
+#### 1. 패키지 설치 (필요한 경우)
+Radix UI를 사용할 경우, 먼저 해당 컴포넌트를 설치해야 합니다.
+```bash
+# 예: Tabs 컴포넌트를 만든다면
+npm install @radix-ui/react-tabs
+```
+
+#### 2. 폴더 구조 생성
+`src/components` 하위에 컴포넌트 이름으로 폴더를 만들고 3개의 파일을 생성합니다.
+- `ComponentName.tsx`: 메인 로직 및 스타일
+- `ComponentName.stories.tsx`: 스토리북 설정
+- `index.ts`: 폴더 외부로 내보내기 (`export * from './ComponentName'`)
+
+#### 3. 컴포넌트 작성 패턴
+우리 프로젝트는 **Tailwind CSS 4**와 **Radix UI**를 함께 사용합니다. `src/utils/cn.ts`를 활용해 클래스명을 조합하세요.
+
+```tsx
+// Example.tsx 예시
+import * as RadixComponent from '@radix-ui/react-xxx';
+import { cn } from '../../utils/cn';
+
+export const Example = React.forwardRef(({ className, ...props }, ref) => (
+  <RadixComponent.Root
+    ref={ref}
+    className={cn('기본-스타일', className)}
+    {...props}
+  />
+));
+```
+
+#### 4. 스토리북 작성 패턴
+사용자가 스토리북에서 속성을 조절해볼 수 있도록 `argTypes`를 정의해주는 것이 좋습니다.
+
+```tsx
+// Example.stories.tsx 예시
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { Example } from './Example';
+
+const meta = {
+  title: 'Components/Example', // 스토리북 좌측 메뉴 경로
+  component: Example,
+  tags: ['autodocs'], // 자동 문서화 기능
+} satisfies Meta<typeof Example>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  args: {
+    // 기본 props 설정
+  },
+};
+```
+
+#### 5. 최종 Export
+마지막으로 `src/components/index.ts`에 한 줄을 추가하여 외부 라이브러리처럼 사용할 수 있게 합니다.
+```typescript
+export * from './Example';
+```
+
+---
+
+**추가 팁:**
+- **애니메이션:** 방금 Accordion을 위해 `src/styles/base.css`에 `@keyframes`를 추가해두었습니다. 다른 컴포넌트에서도 비슷한 애니메이션이 필요하면 해당 파일에 정의해서 사용하세요.
+- **아이콘:** `@radix-ui/react-icons`가 설치되어 있으니 UI에 필요한 아이콘은 여기서 가져다 쓰시면 편리합니다. (예: `ChevronDownIcon`, `PlusIcon` 등)
+
+다음 작업 중에 막히는 부분이 있으면 언제든 말씀해주세요!

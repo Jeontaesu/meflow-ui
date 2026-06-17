@@ -1,4 +1,3 @@
-import React from 'react';
 import * as RadixCheckbox from '@radix-ui/react-checkbox';
 import { cn } from '../../utils/cn';
 

@@ -6,3 +6,4 @@ export * from './Label';
 export * from './Select';
 export * from './Toast';
 export * from './Badge';
+export * from './Accordion';
