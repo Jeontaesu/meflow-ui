@@ -1,5 +1,6 @@
 import * as RadixCheckbox from '@radix-ui/react-checkbox';
 import { cn } from '../../utils/cn';
+import { useId } from 'react';
 
 interface CheckboxProps {
   id?: string;
@@ -36,7 +37,8 @@ export const Checkbox = ({
   indeterminate,
   className,
 }: CheckboxProps) => {
-  const checkboxId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
+  const generatedId = useId(); // 고유 ID 생성
+  const checkboxId = id ?? generatedId; // 외부 전달 ID가 없으면 생성된 ID 사용
   const checkedState = indeterminate ? 'indeterminate' : checked;
 
   return (
@@ -65,7 +67,7 @@ export const Checkbox = ({
         <div className="flex flex-col gap-0.5">
           {label && (
             <label
-              htmlFor={checkboxId}
+              htmlFor={checkboxId} // 여기서 생성된 고유 ID와 매칭.
               className={cn(
                 'text-sm font-medium leading-none text-gray-900',
                 disabled && 'cursor-not-allowed opacity-50'
